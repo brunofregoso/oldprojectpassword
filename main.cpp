@@ -11,7 +11,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include <cstring>
 
 using namespace std;
 
@@ -39,7 +38,6 @@ string getPasswordFromIndex(long long index, int max_password_length);
 long getMedianTime(vector<DataPoint> data_points);
 long runCrackPasswordAndGetMedian(int num_threads, string hashed_password,
                                   int num_runs, vector<DataPoint> &results);
-long long indexFromPassword(const string& password);
 
 char alphabet[] =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
@@ -60,9 +58,8 @@ long timeCrackPassword(int num_threads, string hashed_password)
 {
 
     password_cracked = false;
-    int max_password = 4; 
-vector<string> intervals = getPasswordIntervals(num_threads, max_password);
-
+    vector<string> intervals =
+        getPasswordIntervals(num_threads, hashed_password.length());
     auto start_time = std::chrono::high_resolution_clock::now();
     vector<thread> threads;
     for (int i = 0; i < num_threads; ++i)
@@ -112,15 +109,12 @@ void crackPassword(string hashed_password, string start_password,
 {
     string current_password = start_password;
 
-    while (indexFromPassword(current_password) <= indexFromPassword(end_password) && !password_cracked)
+    while (current_password <= end_password && !password_cracked)
     {
 
         string candidate_hash = hashPassword(current_password);
-       /* cout << "attempt hashed password: " << candidate_hash << endl;
-        cout << "actualy hasheed: " << hashed_password << endl;*/
         if (candidate_hash == hashed_password)
         {
-            cout << "cracked password: " << current_password << endl;
             password_cracked = true;
             password         = current_password;
             break;
@@ -152,7 +146,7 @@ long long getTotalCombinations(int max_password_length)
 string getPasswordFromIndex(long long index, int max_password_length)
 {
     long long start        = 0;
-    //long long combinations = getTotalCombinations(max_password_length);
+    long long combinations = getTotalCombinations(max_password_length);
     for (int i = 1; i <= max_password_length; i++)
     {
         long long combinationsforlength = pow(72, i);
@@ -162,28 +156,14 @@ string getPasswordFromIndex(long long index, int max_password_length)
             string password;
             for (int j = 0; j < i; j++)
             {
-                password += alphabet[index % 72];
+                password = alphabet[index % 72] + password;
                 index /= 72;
             }
-            reverse(password.begin(), password.end());
             return password;
         }
         start += combinationsforlength;
     }
     return "";
-}
-
-long long indexFromPassword(const string& password) {
-    long long index = 0;
-    long long place = 1;
-    for (int i = password.size() - 1; i >= 0; i--) 
-    {
-        const char* c = strchr(alphabet, password[i]);
-        int char_index = c - alphabet;
-        index += char_index * place;
-        place *= alphabet_size;
-    }
-    return index;
 }
 
 vector<string> getPasswordIntervals(int num_threads, int max_password_length)
@@ -214,22 +194,17 @@ string incrementPassword(string password)
 {
     for (int i = password.size() - 1; i >= 0; i--)
     {
-        const char* char_index = strchr(alphabet, password[i]);
-        int index = char_index - alphabet;
-        if (index == alphabet_size - 1)
+        if (password[i] == 'Z')
         {
-            password[i] = alphabet[0];
+            password[i] = 'A';
         }
         else
         {
-            password[i] = alphabet[index + 1];
-           // cout << "result of increment: " << password << endl;
+            password[i]++;
             return password;
         }
     }
-    password = alphabet[0] + password;
-    //cout << "result of increment: " << password << endl;
-    return password;
+    return "A" + password;
 }
 
 // EVAN
@@ -314,7 +289,6 @@ DataResult crackPasswordForThreadCounts(int num_threads, string hashed_password)
     {
         long median_time = runCrackPasswordAndGetMedian(
             num_threads, hashed_password, 3, result.all_data_points);
-            cout << "median time is :" << median_time << "" << endl; 
     }
     result.hashed_password = hashed_password;
     result.password        = password;

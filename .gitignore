@@ -1,5 +1,3 @@
 *.out
 .vscode
 *.exe
-main
-*.csv
